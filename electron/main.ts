@@ -1,6 +1,6 @@
-import { app, BrowserWindow, screen } from 'electron'
-import { createRequire } from 'node:module'
-import { fileURLToPath } from 'node:url'
+import {app, BrowserWindow, screen} from 'electron'
+import {createRequire} from 'node:module'
+import {fileURLToPath} from 'node:url'
 import path from 'node:path'
 
 const require = createRequire(import.meta.url)
@@ -24,51 +24,57 @@ export const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist')
 
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 'public') : RENDERER_DIST
 
-let win: BrowserWindow | null
+let registrationWindow: BrowserWindow | null;
+let mainWindow: BrowserWindow | null;
 
-function createWindow() {
-  win = new BrowserWindow({
-    icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.mjs'),
-    },
-    frame: false,
-    movable: false,
-    resizable: false,
-    height: Math.floor(screen.getPrimaryDisplay().workAreaSize.height * 0.75),
-    width: Math.floor(screen.getPrimaryDisplay().workAreaSize.width * 0.75),
+function createRegistrationWindow() {
+    registrationWindow = new BrowserWindow({
+        icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
+        webPreferences: {
+            preload: path.join(__dirname, 'preload.mjs'),
+        },
+        frame: false,
+        movable: false,
+        transparent: true,
+        resizable: false,
+        height: Math.floor(screen.getPrimaryDisplay().workAreaSize.height * 0.75),
+        width: Math.floor(screen.getPrimaryDisplay().workAreaSize.width * 0.75),
 
-  })
 
-  // Test active push message to Renderer-process.
-  win.webContents.on('did-finish-load', () => {
-    win?.webContents.send('main-process-message', (new Date).toLocaleString())
-  })
+    })
+    registrationWindow.loadURL("http://localhost:5173/registration")
+}
 
-  if (VITE_DEV_SERVER_URL) {
-    win.loadURL(VITE_DEV_SERVER_URL)
-  } else {
-    // win.loadFile('dist/index.html')
-    win.loadFile(path.join(RENDERER_DIST, 'index.html'))
-  }
+function createMainWindow(): void {
+    mainWindow = new BrowserWindow({
+        webPreferences: {
+            preload: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
+        },
+        frame: false,
+        movable: true,
+        resizable: true,
+        height: screen.getPrimaryDisplay().workAreaSize.height,
+        width: screen.getPrimaryDisplay().workAreaSize.width
+    });
+
+    mainWindow.loadURL("http://localhost:5173");
 }
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-    win = null
-  }
+    if (process.platform !== 'darwin') {
+        app.quit();
+        registrationWindow = null;
+        mainWindow = null;
+    }
 })
 
 app.on('activate', () => {
-  // On OS X it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow()
-  }
+    if (BrowserWindow.getAllWindows().length === 0) {
+        createRegistrationWindow();
+    }
 })
 
-app.whenReady().then(createWindow)
+app.whenReady().then(createRegistrationWindow)

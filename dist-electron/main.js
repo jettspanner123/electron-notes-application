@@ -9,40 +9,34 @@ const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
 const MAIN_DIST = path.join(process.env.APP_ROOT, "dist-electron");
 const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist");
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, "public") : RENDERER_DIST;
-let win;
-function createWindow() {
-  win = new BrowserWindow({
+let registrationWindow;
+function createRegistrationWindow() {
+  registrationWindow = new BrowserWindow({
     icon: path.join(process.env.VITE_PUBLIC, "electron-vite.svg"),
     webPreferences: {
       preload: path.join(__dirname, "preload.mjs")
     },
     frame: false,
     movable: false,
+    transparent: true,
     resizable: false,
     height: Math.floor(screen.getPrimaryDisplay().workAreaSize.height * 0.75),
     width: Math.floor(screen.getPrimaryDisplay().workAreaSize.width * 0.75)
   });
-  win.webContents.on("did-finish-load", () => {
-    win == null ? void 0 : win.webContents.send("main-process-message", (/* @__PURE__ */ new Date()).toLocaleString());
-  });
-  if (VITE_DEV_SERVER_URL) {
-    win.loadURL(VITE_DEV_SERVER_URL);
-  } else {
-    win.loadFile(path.join(RENDERER_DIST, "index.html"));
-  }
+  registrationWindow.loadURL("http://localhost:5173/registration");
 }
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
-    win = null;
+    registrationWindow = null;
   }
 });
 app.on("activate", () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
+    createRegistrationWindow();
   }
 });
-app.whenReady().then(createWindow);
+app.whenReady().then(createRegistrationWindow);
 export {
   MAIN_DIST,
   RENDERER_DIST,
